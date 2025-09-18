@@ -30,6 +30,7 @@ As a stock investor, I want a tool that allows me to easily check the daily tran
 - **FR-005**: The system MUST provide a monthly summary of transaction data on the first day of every month.
 - **FR-006**: The system MUST handle cases where the stock market is closed.
 - **FR-007**: The system MUST handle invalid stock codes.
+- **FR-008**: The system MUST store fetched transaction data in a local database.
 
 ### Key Entities *(include if feature involves data)*
 - **Stock**: Represents a stock in the Taiwan stock market, with attributes like stock code and name.

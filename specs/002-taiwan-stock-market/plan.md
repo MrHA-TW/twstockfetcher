@@ -8,8 +8,8 @@ This feature will provide a tool to check daily transaction data for specified s
 
 ## Technical Context
 **Language/Version**: Python 3.11
-**Primary Dependencies**: [NEEDS CLARIFICATION: e.g., requests, pandas, beautifulsoup4]
-**Storage**: Local markdown files
+**Primary Dependencies**: twstock, pandas
+**Storage**: SQLite database (local file)
 **Testing**: pytest
 **Target Platform**: Local machine
 **Project Type**: single
