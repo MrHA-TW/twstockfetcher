@@ -2,52 +2,59 @@ from datetime import date, timedelta
 from typing import List
 
 from ..models.stock_data import TransactionData, WeeklySummary, MonthlySummary
-from . import db_service
+from . import data_fetcher, db_service
 
-def get_past_week_data(stock_code: str, end_date: date) -> List[TransactionData]:
-    """Retrieves all transaction data for a stock from the past week from the database."""
-    start_date = end_date - timedelta(days=6)
+def get_data_for_date_range(
+    stock_code: str, start_date: date, end_date: date
+) -> List[TransactionData]:
+    """Retrieves all transaction data for a stock for a given date range from the database."""
     all_data = []
     current_date = start_date
     while current_date <= end_date:
         # Assuming fetch_stock_data will now primarily hit the cache for recent data
-        data = db_service.get_transaction_data_by_date(stock_code, current_date)
+        data = data_fetcher.fetch_stock_data(stock_code, current_date)
         if data:
-            all_data.append(data)
+            all_data.extend(data)
         current_date += timedelta(days=1)
     return all_data
 
+
 def generate_weekly_summary(stock_code: str, today: date) -> WeeklySummary:
     """
-    Generates a weekly summary for a given stock code ending on the given date.
+    Generates a weekly summary for a given stock code for the current week (Monday to Friday).
     """
-    end_date = today
-    start_date = end_date - timedelta(days=6)
-    
-    weekly_data = get_past_week_data(stock_code, end_date)
-    
+    # Find the start of the week (Monday)
+    start_of_week = today - timedelta(days=today.weekday())
+    # Find the end of the week (Friday)
+    end_of_week = start_of_week + timedelta(days=4)
+
+    weekly_data = get_data_for_date_range(stock_code, start_of_week, end_of_week)
+
     summary = WeeklySummary(
         stock_code=stock_code,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=start_of_week,
+        end_date=end_of_week,
         data=weekly_data
     )
-    
+
     return summary
 
-def get_past_month_data(stock_code: str, year: int, month: int) -> List[TransactionData]:
+def get_past_month_data(
+    stock_code: str, year: int, month: int
+) -> List[TransactionData]:
     """Retrieves all transaction data for a stock for a specific month."""
     import calendar
+
     _, num_days = calendar.monthrange(year, month)
     start_date = date(year, month, 1)
     end_date = date(year, month, num_days)
-    
+
     all_data = []
     current_date = start_date
     while current_date <= end_date:
-        data = db_service.get_transaction_data_by_date(stock_code, current_date)
+        data = data_fetcher.fetch_stock_data(stock_code, current_date)
         if data:
-            all_data.append(data)
+            all_data.extend(data)
         current_date += timedelta(days=1)
     return all_data
 

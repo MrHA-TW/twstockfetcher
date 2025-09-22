@@ -11,22 +11,29 @@ class TestSummaryService(unittest.TestCase):
     def test_generate_weekly_summary(self, mock_db_service):
         """Test the weekly summary generation logic with mock data."""
         # Arrange
-        today = date(2025, 9, 20) # A Saturday
+        today = date(2025, 9, 20)  # A Saturday
         stock_code = "2330"
-        
+
+        start_of_week = today - timedelta(days=today.weekday())
+        end_of_week = start_of_week + timedelta(days=4)
+
         # Mock the data that db_service.get_transaction_data_by_date would return
         mock_data = [
-            TransactionData('2330', today - timedelta(days=2), 900, 905, 910, 899, 100),
-            TransactionData('2330', today - timedelta(days=1), 906, 910, 915, 905, 120),
+            TransactionData(
+                '2330', today - timedelta(days=2), 900, 905, 910, 899, 100
+            ),  # Thursday
+            TransactionData(
+                '2330', today - timedelta(days=1), 906, 910, 915, 905, 120
+            ),  # Friday
         ]
-        
+
         # This mock will return data for the days we have it, and None otherwise
         def side_effect(code, dt):
             for d in mock_data:
                 if d.date == dt and d.stock_code == code:
                     return d
             return None
-            
+
         mock_db_service.get_transaction_data_by_date.side_effect = side_effect
 
         # Act
@@ -35,9 +42,11 @@ class TestSummaryService(unittest.TestCase):
         # Assert
         self.assertIsInstance(summary, WeeklySummary)
         self.assertEqual(summary.stock_code, stock_code)
+        self.assertEqual(summary.start_date, start_of_week)
+        self.assertEqual(summary.end_date, end_of_week)
         self.assertEqual(len(summary.data), 2)
         self.assertEqual(summary.data[0].close_price, 905)
-        self.assertEqual(mock_db_service.get_transaction_data_by_date.call_count, 7)
+        self.assertEqual(mock_db_service.get_transaction_data_by_date.call_count, 5)
 
     @patch('src.services.summary_service.db_service')
     def test_generate_monthly_summary(self, mock_db_service):
