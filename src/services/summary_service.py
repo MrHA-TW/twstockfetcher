@@ -79,5 +79,15 @@ def generate_monthly_summary(stock_code: str, today: date) -> MonthlySummary:
     return summary
 
 def display_date_range_data(stock_code: str, start_date: date, end_date: date):
-    """Placeholder for displaying date range data."""
-    pass
+    """Fetches and displays transaction data for a given stock and date range."""
+    print(f"--- Transaction Data for {stock_code} from {start_date} to {end_date} ---")
+    
+    data = data_fetcher.fetch_stock_data_in_range(stock_code, start_date, end_date)
+    
+    if data:
+        import pandas as pd
+        df = pd.DataFrame(data)
+        print(df.to_string(index=False))
+    else:
+        print("No data found for the specified date range.")
+

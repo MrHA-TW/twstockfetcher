@@ -57,7 +57,7 @@ def main():
         try:
             stock_code = args.stock
             start_date = _validate_and_parse_date(args.start_date)
-            end_date = _validate_and_parse_date(args.end_date)
+            end_date = _validate_and_parse_date(args.end_date) if args.end_date else date.today()
         except (ValueError, TypeError):
             print("Invalid date format. Please use YYYY-MM-DD.", file=sys.stderr)
             sys.exit(1)

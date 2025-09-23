@@ -72,5 +72,48 @@ class TestDataFetcher(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].close_price, 102.0)
 
+    @patch('src.services.data_fetcher.twstock')
+    @patch('src.services.data_fetcher.db_service')
+    def test_fetch_data_for_date_range(self, mock_db_service, mock_twstock):
+        """Test fetching data for a date range from the web and saving it."""
+        stock_code = "2330"
+        start_date = date(2025, 9, 1)
+        end_date = date(2025, 9, 3)
+
+        # Mock the database to return nothing for this range
+        mock_db_service.get_transaction_data_by_range.return_value = []
+
+        # Mock the twstock API response for September
+        mock_stock = MagicMock()
+        mock_twstock.Stock.return_value = mock_stock
+        
+        mock_web_data_1 = MagicMock()
+        mock_web_data_1.date = datetime(2025, 9, 1)
+        mock_web_data_1.open, mock_web_data_1.close, mock_web_data_1.high, mock_web_data_1.low, mock_web_data_1.capacity = (900, 905, 910, 899, 10000)
+        
+        mock_web_data_2 = MagicMock()
+        mock_web_data_2.date = datetime(2025, 9, 2)
+        mock_web_data_2.open, mock_web_data_2.close, mock_web_data_2.high, mock_web_data_2.low, mock_web_data_2.capacity = (906, 910, 915, 905, 12000)
+
+        mock_web_data_3 = MagicMock()
+        mock_web_data_3.date = datetime(2025, 9, 3)
+        mock_web_data_3.open, mock_web_data_3.close, mock_web_data_3.high, mock_web_data_3.low, mock_web_data_3.capacity = (911, 908, 916, 907, 11000)
+
+        mock_stock.fetch.return_value = [mock_web_data_1, mock_web_data_2, mock_web_data_3]
+
+        # Call the new function
+        result = data_fetcher.fetch_stock_data_in_range(stock_code, start_date, end_date)
+
+        # Assertions
+        mock_db_service.get_transaction_data_by_range.assert_called_once_with(stock_code, start_date, end_date)
+        mock_twstock.Stock.assert_called_once_with(stock_code)
+        mock_stock.fetch.assert_called_once_with(2025, 9)
+        mock_db_service.save_transaction_data.assert_called_once()
+        
+        self.assertEqual(len(result), 3)
+        self.assertEqual(result[0].date, start_date)
+        self.assertEqual(result[2].date, end_date)
+        self.assertEqual(result[1].close_price, 910)
+
 if __name__ == '__main__':
     unittest.main()

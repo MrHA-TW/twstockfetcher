@@ -81,3 +81,54 @@ def get_transaction_data_by_date(stock_code: str, target_date: date) -> Optional
             volume=row['volume']
         )
     return None
+
+def get_transaction_data_by_range(stock_code: str, start_date: date, end_date: date) -> List[TransactionData]:
+    """Retrieves all transaction data for a specific stock within a date range."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM transaction_data
+        WHERE stock_code = ? AND date BETWEEN ? AND ?
+        ORDER BY date ASC
+    """, (stock_code, start_date.isoformat(), end_date.isoformat()))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [
+        TransactionData(
+            stock_code=row['stock_code'],
+            date=date.fromisoformat(row['date']),
+            open_price=row['open_price'],
+            close_price=row['close_price'],
+            high_price=row['high_price'],
+            low_price=row['low_price'],
+            volume=row['volume']
+        ) for row in rows
+    ]
+
+
+    """Retrieves transaction data for a specific stock and date from the database."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM transaction_data
+        WHERE stock_code = ? AND date = ?
+    """, (stock_code, target_date.isoformat()))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if row:
+        return TransactionData(
+            stock_code=row['stock_code'],
+            date=date.fromisoformat(row['date']),
+            open_price=row['open_price'],
+            close_price=row['close_price'],
+            high_price=row['high_price'],
+            low_price=row['low_price'],
+            volume=row['volume']
+        )
+    return None
