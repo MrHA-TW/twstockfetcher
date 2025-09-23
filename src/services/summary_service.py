@@ -77,3 +77,7 @@ def generate_monthly_summary(stock_code: str, today: date) -> MonthlySummary:
     )
 
     return summary
+
+def display_date_range_data(stock_code: str, start_date: date, end_date: date):
+    """Placeholder for displaying date range data."""
+    pass
