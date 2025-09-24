@@ -105,5 +105,22 @@ class TestSummaryService(unittest.TestCase):
         self.assertIn("905", output) # Check for close price
         self.assertIn("12000", output) # Check for volume
 
+    @patch('src.services.summary_service.data_fetcher')
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_display_date_range_data_no_data(self, mock_stdout, mock_data_fetcher):
+        """Test the display of date range data when no data is found."""
+        # Arrange
+        stock_code = "2330"
+        start_date = date(2025, 9, 1)
+        end_date = date(2025, 9, 2)
+        mock_data_fetcher.fetch_stock_data_in_range.return_value = []
+
+        # Act
+        summary_service.display_date_range_data(stock_code, start_date, end_date)
+
+        # Assert
+        output = mock_stdout.getvalue()
+        self.assertIn("No data found for the specified date range.", output)
+
 if __name__ == '__main__':
     unittest.main()

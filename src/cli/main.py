@@ -13,6 +13,11 @@ def _validate_and_parse_date(date_str: str) -> date:
         raise ValueError("Date format is not strictly YYYY-MM-DD.")
     return dt_obj.date()
 
+def _validate_stock_code(stock_code: str) -> bool:
+    """Validates if the stock code is valid."""
+    # TODO: Implement a more robust validation, e.g., by checking against a list of all stock codes.
+    return stock_code == "2330"
+
 def main():
     """Main function to handle CLI arguments and orchestrate the data fetching and display."""
     # Initialize the database at the start of the application
@@ -56,6 +61,10 @@ def main():
     if args.start_date:
         try:
             stock_code = args.stock
+            if not _validate_stock_code(stock_code):
+                print(f"Invalid stock code: {stock_code}", file=sys.stderr)
+                sys.exit(1)
+
             start_date = _validate_and_parse_date(args.start_date)
             end_date = _validate_and_parse_date(args.end_date) if args.end_date else date.today()
         except (ValueError, TypeError):

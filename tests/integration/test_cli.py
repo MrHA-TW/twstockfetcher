@@ -6,6 +6,8 @@ from datetime import date, datetime
 
 from src.cli import main
 from src.models.stock_data import TransactionData
+from src.services import db_service, data_fetcher
+from datetime import date, datetime
 
 class TestCli(unittest.TestCase):
 
@@ -117,6 +119,54 @@ class TestCli(unittest.TestCase):
             start_date=datetime.strptime(start_date_str, "%Y-%m-%d").date(),
             end_date=date.today() # Expect today's date as default
         )
+
+    @patch('src.cli.main.db_service')
+    def test_invalid_stock_code_handling(self, mock_db_service):
+        """Test that an invalid stock code exits and prints an error."""
+        # Arrange
+        sys.argv = ['main.py', '--stock', 'INVALID', '--start-date', '2025-09-01']
+
+        # Act & Assert
+        with self.assertRaises(SystemExit):
+            main.main()
+
+        # Assert error message
+        self.assertIn("Invalid stock code", self.captured_stderr.getvalue())
+        mock_db_service.initialize_db.assert_called_once()
+
+    def test_end_to_end_query(self):
+        """A full end-to-end test that queries real data."""
+        # Arrange
+        stock_code = "2330"
+        start_date_str = "2024-01-02"
+        end_date_str = "2024-01-03"
+
+        # This is a real end-to-end test, so we don't mock services.
+        # Ensure the database is clean before running.
+        db_service.initialize_db()
+        # You might want to clear the specific table if needed, e.g.,
+        # with db_service.get_connection() as conn:
+        #     conn.execute("DELETE FROM transaction_data WHERE stock_code = ?", (stock_code,))
+
+        # We need to ensure some data exists for the query to return something.
+        # Let's fetch it directly first.
+        data_fetcher.fetch_stock_data_in_range(
+            stock_code, 
+            datetime.strptime(start_date_str, "%Y-%m-%d").date(),
+            datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        )
+
+        sys.argv = ['main.py', '--stock', stock_code, '--start-date', start_date_str, '--end-date', end_date_str]
+
+        # Act
+        main.main()
+
+        # Assert
+        output = self.captured_output.getvalue()
+        self.assertIn(f"--- Transaction Data for {stock_code} from {start_date_str} to {end_date_str} ---", output)
+        # We expect to see some data rows. The exact values depend on the `twstock` library.
+        self.assertIn("open_price", output)
+        self.assertIn("close_price", output)
 
 if __name__ == '__main__':
     unittest.main()
