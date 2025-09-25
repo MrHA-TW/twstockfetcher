@@ -2,6 +2,7 @@ import argparse
 import sys
 from datetime import date, datetime
 import pandas as pd
+import twstock
 
 from src.services import data_fetcher, summary_service
 from src.services import db_service # Import db_service to initialize the DB
@@ -15,11 +16,13 @@ def _validate_and_parse_date(date_str: str) -> date:
 
 def _validate_stock_code(stock_code: str) -> bool:
     """Validates if the stock code is valid."""
-    # TODO: Implement a more robust validation, e.g., by checking against a list of all stock codes.
-    return stock_code == "2330"
+    return stock_code in twstock.codes
 
 def main():
     """Main function to handle CLI arguments and orchestrate the data fetching and display."""
+    # Update stock codes
+    twstock.__update_codes()
+
     # Initialize the database at the start of the application
     db_service.initialize_db()
 
@@ -64,7 +67,6 @@ def main():
             if not _validate_stock_code(stock_code):
                 print(f"Invalid stock code: {stock_code}", file=sys.stderr)
                 sys.exit(1)
-
             start_date = _validate_and_parse_date(args.start_date)
             end_date = _validate_and_parse_date(args.end_date) if args.end_date else date.today()
         except (ValueError, TypeError):
