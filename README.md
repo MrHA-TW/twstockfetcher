@@ -1,6 +1,6 @@
 # Stock Fetcher
 
-This is a command-line tool to fetch stock data.
+This is a command-line tool to fetch stock data for both listed (TWSE) and over-the-counter (TPEx) stocks in Taiwan.
 
 ## Installation
 
@@ -12,7 +12,7 @@ This is a command-line tool to fetch stock data.
 
 2.  Install the required dependencies:
     ```bash
-    pip install pandas twstock
+    pip install -r requirements.txt
     ```
 
 ## Usage
@@ -22,7 +22,11 @@ This is a command-line tool to fetch stock data.
 To query stock data for a specific date range, use the `--stock`, `--start-date`, and `--end-date` arguments:
 
 ```bash
+# Query a listed stock (e.g., TSMC)
 python3 -m src.cli.main --stock 2330 --start-date 2025-09-01 --end-date 2025-09-05
+
+# Query an OTC stock (e.g., GAMA)
+python3 -m src.cli.main --stock 8086 --start-date 2025-09-01 --end-date 2025-09-05
 ```
 
 If `--end-date` is omitted, it will default to the current date.
@@ -32,7 +36,7 @@ If `--end-date` is omitted, it will default to the current date.
 To get the daily data for one or more stocks, use the `--stocks` argument with a comma-separated list of stock codes:
 
 ```bash
-python3 -m src.cli.main --stocks 2330,2317
+python3 -m src.cli.main --stocks 2330,8086
 ```
 
 ### Weekly and Monthly Summaries
@@ -41,8 +45,8 @@ To get a summary for the past week or month, use the `--weekly` or `--monthly` f
 
 ```bash
 # Weekly summary
-python3 -m src.cli.main --stocks 2330,2317 --weekly
+python3 -m src.cli.main --stocks 2330,8086 --weekly
 
 # Monthly summary
-python3 -m src.cli.main --stocks 2330,2317 --monthly
+python3 -m src.cli.main --stocks 2330,8086 --monthly
 ```
