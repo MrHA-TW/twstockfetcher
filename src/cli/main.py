@@ -25,11 +25,6 @@ def main():
         help='Comma-separated list of stock codes (e.g., "2330,2317").'
     )
     parser.add_argument(
-        '--stock',
-        type=str,
-        help='A single stock code for date range queries (e.g., "2330").'
-    )
-    parser.add_argument(
         '--start-date',
         type=str,
         help='Start date for query (YYYY-MM-DD).'
@@ -55,10 +50,12 @@ def main():
 
     if args.start_date:
         try:
-            stock_code = args.stock
-            if not stock_code:
-                print("Error: --stock is required with --start-date", file=sys.stderr)
+            stock_codes_str = args.stocks
+            if not stock_codes_str:
+                print("Error: --stocks is required with --start-date", file=sys.stderr)
                 sys.exit(1)
+            
+            stock_codes = [code.strip() for code in stock_codes_str.split(',')]
             start_date = _validate_and_parse_date(args.start_date)
             end_date = _validate_and_parse_date(args.end_date) if args.end_date else date.today()
         except (ValueError, TypeError):
@@ -69,11 +66,12 @@ def main():
             print("Start date cannot be after end date.", file=sys.stderr)
             sys.exit(1)
 
-        summary_service.display_date_range_data(
-            stock_code=stock_code,
-            start_date=start_date,
-            end_date=end_date
-        )
+        for stock_code in stock_codes:
+            summary_service.display_date_range_data(
+                stock_code=stock_code,
+                start_date=start_date,
+                end_date=end_date
+            )
 
     elif args.weekly:
         print(f"--- Weekly Summary for Week Ending {today} ---")

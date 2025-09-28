@@ -58,7 +58,7 @@ class TestCli(unittest.TestCase):
         start_date_str = "2025-09-01"
         end_date_str = "2025-09-05"
         
-        sys.argv = ['main.py', '--stock', stock_code, '--start-date', start_date_str, '--end-date', end_date_str]
+        sys.argv = ['main.py', '--stocks', stock_code, '--start-date', start_date_str, '--end-date', end_date_str]
         
         # Act
         main.main()
@@ -75,7 +75,7 @@ class TestCli(unittest.TestCase):
     def test_invalid_date_format_handling(self, mock_db_service):
         """Test that an invalid date format exits and prints an error."""
         # Arrange
-        sys.argv = ['main.py', '--stock', '2330', '--start-date', '2025-9-1', '--end-date', '2025-09-05']
+        sys.argv = ['main.py', '--stocks', '2330', '--start-date', '2025-9-1', '--end-date', '2025-09-05']
         
         # Act & Assert
         with self.assertRaises(SystemExit):
@@ -89,7 +89,7 @@ class TestCli(unittest.TestCase):
     def test_start_date_after_end_date_handling(self, mock_db_service):
         """Test that a start date after end date exits and prints an error."""
         # Arrange
-        sys.argv = ['main.py', '--stock', '2330', '--start-date', '2025-09-05', '--end-date', '2025-09-01']
+        sys.argv = ['main.py', '--stocks', '2330', '--start-date', '2025-09-05', '--end-date', '2025-09-01']
         
         # Act & Assert
         with self.assertRaises(SystemExit):
@@ -107,7 +107,7 @@ class TestCli(unittest.TestCase):
         stock_code = "2330"
         start_date_str = "2025-09-01"
         
-        sys.argv = ['main.py', '--stock', stock_code, '--start-date', start_date_str]
+        sys.argv = ['main.py', '--stocks', stock_code, '--start-date', start_date_str]
         
         # Act
         main.main()
@@ -120,19 +120,60 @@ class TestCli(unittest.TestCase):
             end_date=date.today() # Expect today's date as default
         )
 
+    @patch('src.cli.main.data_fetcher.fetch_stock_data_in_range', return_value=[])
     @patch('src.cli.main.db_service')
-    def test_invalid_stock_code_handling(self, mock_db_service):
-        """Test that an invalid stock code exits and prints an error."""
+    def test_invalid_stock_code_handling(self, mock_db_service, mock_fetch):
+        """Test that an invalid stock code prints a 'No data found' message."""
         # Arrange
-        sys.argv = ['main.py', '--stock', 'INVALID', '--start-date', '2025-09-01']
+        stock_code = 'INVALID'
+        start_date = '2025-09-01'
+        sys.argv = ['main.py', '--stocks', stock_code, '--start-date', start_date]
 
-        # Act & Assert
-        with self.assertRaises(SystemExit):
-            main.main()
+        # Act
+        main.main()
 
-        # Assert error message
-        self.assertIn("Invalid stock code", self.captured_stderr.getvalue())
+        # Assert
+        output = self.captured_output.getvalue()
+        self.assertIn(f"No data found for the specified date range.", output)
         mock_db_service.initialize_db.assert_called_once()
+
+    @patch('src.cli.main.summary_service.display_date_range_data')
+    @patch('src.cli.main.db_service')
+    def test_date_range_query_multiple_stocks(self, mock_db_service, mock_display_data):
+        """Test date range queries for multiple stock codes."""
+        # Arrange
+        stock_codes = "2330,8086"
+        start_date_str = "2025-09-01"
+        end_date_str = "2025-09-05"
+        
+        sys.argv = ['main.py', '--stocks', stock_codes, '--start-date', start_date_str, '--end-date', end_date_str]
+        
+        # Act
+        main.main()
+        
+        # Assert
+        mock_db_service.initialize_db.assert_called_once()
+        
+        # Verify that display_date_range_data was called for each stock code
+        calls = mock_display_data.call_args_list
+        self.assertEqual(len(calls), 2)
+        
+        expected_start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        expected_end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        
+        # Check the call for the first stock code
+        calls[0].assert_called_with(
+            stock_code='2330',
+            start_date=expected_start_date,
+            end_date=expected_end_date
+        )
+        
+        # Check the call for the second stock code
+        calls[1].assert_called_with(
+            stock_code='8086',
+            start_date=expected_start_date,
+            end_date=expected_end_date
+        )
 
     def test_end_to_end_query(self):
         """A full end-to-end test that queries real data."""
