@@ -48,7 +48,7 @@ def _convert_df_to_transaction_data(df: pd.DataFrame, stock_code: str) -> List[T
         ))
     return transactions
 
-def fetch_stock_data(stock_code: str, fetch_date: date) -> List[TransactionData]:
+def fetch_stock_data(stock_code: str, fetch_date: date, silent: bool = False) -> List[TransactionData]:
     """
     Fetches transaction data for a given stock code and date using yfinance.
     It first checks the local database. If data is not found, it fetches from the web
@@ -63,7 +63,8 @@ def fetch_stock_data(stock_code: str, fetch_date: date) -> List[TransactionData]
     stock_data, _ = _fetch_with_suffix_handling(stock_code, start_date=fetch_date, end_date=fetch_date + timedelta(days=1))
     
     if stock_data is None or stock_data.empty:
-        print(f"No data found for {stock_code} on {fetch_date}.")
+        if not silent:
+            print(f"No data found for {stock_code} on {fetch_date}.")
         return []
 
     fetched_data = _convert_df_to_transaction_data(stock_data, stock_code)

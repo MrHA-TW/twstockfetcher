@@ -12,7 +12,7 @@ def get_data_for_date_range(
     current_date = start_date
     while current_date <= end_date:
         # Assuming fetch_stock_data will now primarily hit the cache for recent data
-        data = data_fetcher.fetch_stock_data(stock_code, current_date)
+        data = data_fetcher.fetch_stock_data(stock_code, current_date, silent=True)
         if data:
             all_data.extend(data)
         current_date += timedelta(days=1)
@@ -52,7 +52,7 @@ def get_past_month_data(
     all_data = []
     current_date = start_date
     while current_date <= end_date:
-        data = data_fetcher.fetch_stock_data(stock_code, current_date)
+        data = data_fetcher.fetch_stock_data(stock_code, current_date, silent=True)
         if data:
             all_data.extend(data)
         current_date += timedelta(days=1)
