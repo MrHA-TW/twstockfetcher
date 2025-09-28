@@ -1,6 +1,7 @@
 import unittest
-from unittest.mock import patch, MagicMock
-from datetime import date, datetime
+from unittest.mock import patch, call
+from datetime import date, timedelta
+import pandas as pd
 
 from src.models.stock_data import TransactionData
 from src.services import data_fetcher
@@ -13,106 +14,103 @@ class TestDataFetcher(unittest.TestCase):
         test_date = date(2025, 9, 18)
         stock_code = "2330"
         
-        # Mock the database to return a cached entry
         mock_cached_data = TransactionData(
             stock_code=stock_code, date=test_date, open_price=900.0, 
             close_price=905.0, high_price=910.0, low_price=899.0, volume=50000
         )
         mock_db_service.get_transaction_data_by_date.return_value = mock_cached_data
 
-        # Call the fetcher
         result = data_fetcher.fetch_stock_data(stock_code, test_date)
 
-        # Assert that the db service was called
         mock_db_service.get_transaction_data_by_date.assert_called_once_with(stock_code, test_date)
-        
-        # Assert that the result is the cached data
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], mock_cached_data)
 
-    @patch('src.services.data_fetcher.twstock')
+    @patch('src.services.data_fetcher.yf.download')
     @patch('src.services.data_fetcher.db_service')
-    def test_02_fetch_from_web_and_save(self, mock_db_service, mock_twstock):
-        """Test that data is fetched from the web and saved if not in the database."""
+    def test_02_fetch_listed_from_web_and_save(self, mock_db_service, mock_yf_download):
+        """Test fetching listed stock data from the web (first try success)."""
         test_date = date(2025, 9, 19)
         stock_code = "2317"
 
-        # Mock the database to return nothing
         mock_db_service.get_transaction_data_by_date.return_value = None
 
-        # Mock the twstock API response
-        mock_stock = MagicMock()
-        mock_twstock.Stock.return_value = mock_stock
-        
-        # Create a mock data point that twstock would return
-        mock_web_data = MagicMock()
-        mock_web_data.date = datetime(2025, 9, 19)
-        mock_web_data.open = 100.0
-        mock_web_data.close = 102.0
-        mock_web_data.high = 103.0
-        mock_web_data.low = 99.0
-        mock_web_data.capacity = 10000
-        mock_stock.fetch.return_value = [mock_web_data]
+        mock_df = pd.DataFrame({
+            'Open': [100.0], 'High': [103.0], 'Low': [99.0], 'Close': [102.0], 'Volume': [10000]
+        }, index=pd.to_datetime([test_date]))
+        mock_yf_download.return_value = mock_df
 
-        # Call the fetcher
         result = data_fetcher.fetch_stock_data(stock_code, test_date)
 
-        # Assert that the db service was called to check for data
         mock_db_service.get_transaction_data_by_date.assert_called_once_with(stock_code, test_date)
-        
-        # Assert that twstock was called
-        mock_twstock.Stock.assert_called_once_with(stock_code)
-        mock_stock.fetch.assert_called_once_with(2025, 9)
-
-        # Assert that the new data was saved to the db
+        mock_yf_download.assert_called_once_with(
+            "2317.TW", start=test_date, end=test_date + timedelta(days=1), progress=False
+        )
         mock_db_service.save_transaction_data.assert_called_once()
-        self.assertEqual(mock_db_service.save_transaction_data.call_args[0][0][0].stock_code, stock_code)
-
-        # Assert that the result is the newly fetched data
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].close_price, 102.0)
 
-    @patch('src.services.data_fetcher.twstock')
+    @patch('src.services.data_fetcher.yf.download')
     @patch('src.services.data_fetcher.db_service')
-    def test_fetch_data_for_date_range(self, mock_db_service, mock_twstock):
-        """Test fetching data for a date range from the web and saving it."""
+    def test_03_fetch_otc_from_web_and_save(self, mock_db_service, mock_yf_download):
+        """Test fetching OTC stock data (.TW fails, .TWO succeeds)."""
+        test_date = date(2025, 9, 22)
+        stock_code = "6488"
+
+        mock_db_service.get_transaction_data_by_date.return_value = None
+
+        # Mock yf.download to fail on .TW and succeed on .TWO
+        mock_otc_df = pd.DataFrame({
+            'Open': [500.0], 'High': [510.0], 'Low': [498.0], 'Close': [505.0], 'Volume': [5000]
+        }, index=pd.to_datetime([test_date]))
+        
+        mock_yf_download.side_effect = [
+            pd.DataFrame(), # Empty dataframe for the .TW call
+            mock_otc_df      # Real dataframe for the .TWO call
+        ]
+
+        data_fetcher.fetch_stock_data(stock_code, test_date)
+
+        # Check that download was called twice, first with .TW, then with .TWO
+        calls = [
+            call("6488.TW", start=test_date, end=test_date + timedelta(days=1), progress=False),
+            call("6488.TWO", start=test_date, end=test_date + timedelta(days=1), progress=False)
+        ]
+        mock_yf_download.assert_has_calls(calls)
+        self.assertEqual(mock_yf_download.call_count, 2)
+        mock_db_service.save_transaction_data.assert_called_once()
+
+    @patch('src.services.data_fetcher.yf.download')
+    @patch('src.services.data_fetcher.db_service')
+    def test_04_fetch_data_for_date_range(self, mock_db_service, mock_yf_download):
+        """Test fetching data for a date range from the web."""
         stock_code = "2330"
         start_date = date(2025, 9, 1)
         end_date = date(2025, 9, 3)
 
-        # Mock the database to return nothing for this range
-        mock_db_service.get_transaction_data_by_range.return_value = []
+        mock_db_service.get_transaction_data_by_range.side_effect = [
+            [], 
+            [ # Mock return for the final re-query
+                TransactionData(stock_code, date(2025, 9, 1), 900, 905, 910, 899, 10000),
+                TransactionData(stock_code, date(2025, 9, 2), 906, 910, 915, 905, 12000),
+                TransactionData(stock_code, date(2025, 9, 3), 911, 908, 916, 907, 11000)
+            ]
+        ]
 
-        # Mock the twstock API response for September
-        mock_stock = MagicMock()
-        mock_twstock.Stock.return_value = mock_stock
-        
-        mock_web_data_1 = MagicMock()
-        mock_web_data_1.date = datetime(2025, 9, 1)
-        mock_web_data_1.open, mock_web_data_1.close, mock_web_data_1.high, mock_web_data_1.low, mock_web_data_1.capacity = (900, 905, 910, 899, 10000)
-        
-        mock_web_data_2 = MagicMock()
-        mock_web_data_2.date = datetime(2025, 9, 2)
-        mock_web_data_2.open, mock_web_data_2.close, mock_web_data_2.high, mock_web_data_2.low, mock_web_data_2.capacity = (906, 910, 915, 905, 12000)
+        dates = pd.to_datetime([date(2025, 9, 1), date(2025, 9, 2), date(2025, 9, 3)])
+        mock_df = pd.DataFrame({
+            'Open': [900, 906, 911], 'High': [910, 915, 916], 'Low': [899, 905, 907],
+            'Close': [905, 910, 908], 'Volume': [10000, 12000, 11000]
+        }, index=dates)
+        mock_yf_download.return_value = mock_df
 
-        mock_web_data_3 = MagicMock()
-        mock_web_data_3.date = datetime(2025, 9, 3)
-        mock_web_data_3.open, mock_web_data_3.close, mock_web_data_3.high, mock_web_data_3.low, mock_web_data_3.capacity = (911, 908, 916, 907, 11000)
-
-        mock_stock.fetch.return_value = [mock_web_data_1, mock_web_data_2, mock_web_data_3]
-
-        # Call the new function
         result = data_fetcher.fetch_stock_data_in_range(stock_code, start_date, end_date)
 
-        # Assertions
-        mock_db_service.get_transaction_data_by_range.assert_called_once_with(stock_code, start_date, end_date)
-        mock_twstock.Stock.assert_called_once_with(stock_code)
-        mock_stock.fetch.assert_called_once_with(2025, 9)
+        mock_yf_download.assert_called_once_with(
+            "2330.TW", start=start_date, end=end_date + timedelta(days=1), progress=False
+        )
         mock_db_service.save_transaction_data.assert_called_once()
-        
         self.assertEqual(len(result), 3)
-        self.assertEqual(result[0].date, start_date)
-        self.assertEqual(result[2].date, end_date)
         self.assertEqual(result[1].close_price, 910)
 
 if __name__ == '__main__':
