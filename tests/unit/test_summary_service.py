@@ -21,15 +21,15 @@ class TestSummaryService(unittest.TestCase):
         # Mock the data that data_fetcher.fetch_stock_data would return
         mock_data = [
             TransactionData(
-                '2330', today - timedelta(days=2), 900, 905, 910, 899, 100
+                '2330', 'TSMC', today - timedelta(days=2), 900, 905, 910, 899, 100
             ),  # Thursday
             TransactionData(
-                '2330', today - timedelta(days=1), 906, 910, 915, 905, 120
+                '2330', 'TSMC', today - timedelta(days=1), 906, 910, 915, 905, 120
             ),  # Friday
         ]
 
         # This mock will return data for the days we have it, and None otherwise
-        def side_effect(code, dt):
+        def side_effect(code, dt, silent=False):
             for d in mock_data:
                 if d.date == dt and d.stock_code == code:
                     return [d]
@@ -58,11 +58,11 @@ class TestSummaryService(unittest.TestCase):
         
         # Mock data for September 2025
         mock_data = [
-            TransactionData('2317', date(2025, 9, 15), 100, 102, 103, 99, 200),
-            TransactionData('2317', date(2025, 9, 30), 105, 108, 110, 104, 250),
+            TransactionData('2317', 'Hon Hai', date(2025, 9, 15), 100, 102, 103, 99, 200),
+            TransactionData('2317', 'Hon Hai', date(2025, 9, 30), 105, 108, 110, 104, 250),
         ]
 
-        def side_effect(code, dt):
+        def side_effect(code, dt, silent=False):
             for d in mock_data:
                 if d.date == dt and d.stock_code == code:
                     return [d]
@@ -91,8 +91,8 @@ class TestSummaryService(unittest.TestCase):
         start_date = date(2025, 9, 1)
         end_date = date(2025, 9, 2)
         mock_data = [
-            TransactionData('2330', start_date, 900, 905, 910, 899, 10000),
-            TransactionData('2330', end_date, 906, 910, 915, 905, 12000),
+            TransactionData('2330', 'TSMC', start_date, 900, 905, 910, 899, 10000),
+            TransactionData('2330', 'TSMC', end_date, 906, 910, 915, 905, 12000),
         ]
         mock_data_fetcher.fetch_stock_data_in_range.return_value = mock_data
 

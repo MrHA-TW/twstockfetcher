@@ -87,6 +87,10 @@ def display_date_range_data(stock_code: str, start_date: date, end_date: date):
     if data:
         import pandas as pd
         df = pd.DataFrame(data)
+        # Reorder columns to place stock_name after stock_code
+        cols = ['stock_code', 'stock_name', 'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']
+        df_cols = [col for col in cols if col in df.columns]
+        df = df[df_cols]
         print(df.to_string(index=False))
     else:
         print("No data found for the specified date range.")

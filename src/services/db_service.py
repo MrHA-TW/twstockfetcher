@@ -19,6 +19,7 @@ def initialize_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS transaction_data (
             stock_code TEXT NOT NULL,
+            stock_name TEXT NOT NULL,
             date TEXT NOT NULL,
             open_price REAL NOT NULL,
             close_price REAL NOT NULL,
@@ -39,6 +40,7 @@ def save_transaction_data(data: List[TransactionData]):
     data_to_insert = [
         (
             d.stock_code, 
+            d.stock_name,
             d.date.isoformat(), 
             d.open_price, 
             d.close_price, 
@@ -50,8 +52,8 @@ def save_transaction_data(data: List[TransactionData]):
     ]
     
     cursor.executemany("""
-        INSERT OR REPLACE INTO transaction_data (stock_code, date, open_price, close_price, high_price, low_price, volume)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO transaction_data (stock_code, stock_name, date, open_price, close_price, high_price, low_price, volume)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     """, data_to_insert)
     
     conn.commit()
@@ -73,6 +75,7 @@ def get_transaction_data_by_date(stock_code: str, target_date: date) -> Optional
     if row:
         return TransactionData(
             stock_code=row['stock_code'],
+            stock_name=row['stock_name'],
             date=date.fromisoformat(row['date']),
             open_price=row['open_price'],
             close_price=row['close_price'],
@@ -99,6 +102,7 @@ def get_transaction_data_by_range(stock_code: str, start_date: date, end_date: d
     return [
         TransactionData(
             stock_code=row['stock_code'],
+            stock_name=row['stock_name'],
             date=date.fromisoformat(row['date']),
             open_price=row['open_price'],
             close_price=row['close_price'],
@@ -107,28 +111,3 @@ def get_transaction_data_by_range(stock_code: str, start_date: date, end_date: d
             volume=row['volume']
         ) for row in rows
     ]
-
-
-    """Retrieves transaction data for a specific stock and date from the database."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        SELECT * FROM transaction_data
-        WHERE stock_code = ? AND date = ?
-    """, (stock_code, target_date.isoformat()))
-    
-    row = cursor.fetchone()
-    conn.close()
-    
-    if row:
-        return TransactionData(
-            stock_code=row['stock_code'],
-            date=date.fromisoformat(row['date']),
-            open_price=row['open_price'],
-            close_price=row['close_price'],
-            high_price=row['high_price'],
-            low_price=row['low_price'],
-            volume=row['volume']
-        )
-    return None

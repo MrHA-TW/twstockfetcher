@@ -1,13 +1,14 @@
+import os
 import unittest
 from unittest.mock import patch, MagicMock
 from io import StringIO
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from src.cli import main
-from src.models.stock_data import TransactionData
+from src.models.stock_data import TransactionData, WeeklySummary, MonthlySummary
 from src.services import db_service, data_fetcher
-from datetime import date, datetime
+
 
 class TestCli(unittest.TestCase):
 
@@ -34,7 +35,7 @@ class TestCli(unittest.TestCase):
         stock_code = "2330"
         
         mock_data = TransactionData(
-            stock_code=stock_code, date=test_date, open_price=900.0, 
+            stock_code=stock_code, stock_name="TSMC", date=test_date, open_price=900.0, 
             close_price=905.0, high_price=910.0, low_price=899.0, volume=50000
         )
         mock_data_fetcher.fetch_stock_data.return_value = [mock_data]
@@ -47,7 +48,73 @@ class TestCli(unittest.TestCase):
         output = self.captured_output.getvalue()
         self.assertIn("--- Daily Transaction Data", output)
         self.assertIn(stock_code, output)
+        self.assertIn("TSMC", output)
         mock_db_service.initialize_db.assert_called_once()
+
+    @patch('src.cli.main.summary_service.generate_weekly_summary')
+    @patch('src.cli.main.db_service')
+    def test_weekly_summary_display(self, mock_db_service, mock_generate_weekly_summary):
+        """Test the CLI for displaying weekly summary."""
+        # Arrange
+        test_date = date.today()
+        stock_code = "2330"
+        
+        mock_summary_data = [
+            {'stock_code': stock_code, 'stock_name': 'TSMC', 'date': test_date, 'open_price': 890.0, 'close_price': 905.0, 'high_price': 910.0, 'low_price': 888.0, 'volume': 45000}
+        ]
+        mock_summary = WeeklySummary(
+            stock_code=stock_code,
+            start_date=test_date - timedelta(days=test_date.weekday()),
+            end_date=(test_date - timedelta(days=test_date.weekday())) + timedelta(days=4),
+            data=mock_summary_data
+        )
+        
+        mock_generate_weekly_summary.return_value = mock_summary
+        sys.argv = ['main.py', '--stocks', stock_code, '--weekly']
+        
+        # Act
+        main.main()
+        
+        # Assert
+        output = self.captured_output.getvalue()
+        self.assertIn("--- Weekly Summary", output)
+        self.assertIn(stock_code, output)
+        self.assertIn("TSMC", output)
+        self.assertIn("905.0", output) # Check for close price
+        mock_db_service.initialize_db.assert_called_once()
+        mock_generate_weekly_summary.assert_called_once_with(stock_code, test_date)
+
+    @patch('src.cli.main.summary_service.generate_monthly_summary')
+    @patch('src.cli.main.db_service')
+    def test_monthly_summary_display(self, mock_db_service, mock_generate_monthly_summary):
+        """Test the CLI for displaying monthly summary."""
+        # Arrange
+        test_date = date.today()
+        stock_code = "2317"
+        
+        mock_summary_data = [
+            {'stock_code': stock_code, 'stock_name': 'Hon Hai', 'date': test_date.replace(day=15), 'open_price': 100.0, 'close_price': 102.0, 'high_price': 103.0, 'low_price': 99.0, 'volume': 12000}
+        ]
+        mock_summary = MonthlySummary(
+            stock_code=stock_code,
+            month="2025-09", # Example month
+            data=mock_summary_data
+        )
+
+        mock_generate_monthly_summary.return_value = mock_summary
+        sys.argv = ['main.py', '--stocks', stock_code, '--monthly']
+        
+        # Act
+        main.main()
+        
+        # Assert
+        output = self.captured_output.getvalue()
+        self.assertIn("--- Monthly Summary", output)
+        self.assertIn(stock_code, output)
+        self.assertIn("Hon Hai", output)
+        self.assertIn("102.0", output) # Check for close price
+        mock_db_service.initialize_db.assert_called_once()
+        mock_generate_monthly_summary.assert_called_once_with(stock_code, test_date)
 
     @patch('src.cli.main.summary_service.display_date_range_data')
     @patch('src.cli.main.db_service')
@@ -184,6 +251,8 @@ class TestCli(unittest.TestCase):
 
         # This is a real end-to-end test, so we don't mock services.
         # Ensure the database is clean before running.
+        if os.path.exists("stock_data.db"):
+            os.remove("stock_data.db")
         db_service.initialize_db()
         # You might want to clear the specific table if needed, e.g.,
         # with db_service.get_connection() as conn:
@@ -208,6 +277,7 @@ class TestCli(unittest.TestCase):
         # We expect to see some data rows. The exact values depend on the `twstock` library.
         self.assertIn("open_price", output)
         self.assertIn("close_price", output)
+        self.assertIn("Taiwan Semiconductor", output)
 
 if __name__ == '__main__':
     unittest.main()

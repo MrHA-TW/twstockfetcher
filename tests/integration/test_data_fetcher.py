@@ -15,7 +15,7 @@ class TestDataFetcher(unittest.TestCase):
         stock_code = "2330"
         
         mock_cached_data = TransactionData(
-            stock_code=stock_code, date=test_date, open_price=900.0, 
+            stock_code=stock_code, stock_name="TSMC", date=test_date, open_price=900.0, 
             close_price=905.0, high_price=910.0, low_price=899.0, volume=50000
         )
         mock_db_service.get_transaction_data_by_date.return_value = mock_cached_data
@@ -26,9 +26,10 @@ class TestDataFetcher(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], mock_cached_data)
 
+    @patch('src.services.data_fetcher._get_stock_name', return_value="Hon Hai Precision")
     @patch('src.services.data_fetcher.yf.download')
     @patch('src.services.data_fetcher.db_service')
-    def test_02_fetch_listed_from_web_and_save(self, mock_db_service, mock_yf_download):
+    def test_02_fetch_listed_from_web_and_save(self, mock_db_service, mock_yf_download, mock_get_name):
         """Test fetching listed stock data from the web (first try success)."""
         test_date = date(2025, 9, 19)
         stock_code = "2317"
@@ -44,15 +45,17 @@ class TestDataFetcher(unittest.TestCase):
 
         mock_db_service.get_transaction_data_by_date.assert_called_once_with(stock_code, test_date)
         mock_yf_download.assert_called_once_with(
-            "2317.TW", start=test_date, end=test_date + timedelta(days=1), progress=False
+            "2317.TW", start=test_date, end=test_date + timedelta(days=1), progress=False, auto_adjust=False
         )
         mock_db_service.save_transaction_data.assert_called_once()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].close_price, 102.0)
+        self.assertEqual(result[0].stock_name, "Hon Hai Precision")
 
+    @patch('src.services.data_fetcher._get_stock_name', return_value="GlobalWafers")
     @patch('src.services.data_fetcher.yf.download')
     @patch('src.services.data_fetcher.db_service')
-    def test_03_fetch_otc_from_web_and_save(self, mock_db_service, mock_yf_download):
+    def test_03_fetch_otc_from_web_and_save(self, mock_db_service, mock_yf_download, mock_get_name):
         """Test fetching OTC stock data (.TW fails, .TWO succeeds)."""
         test_date = date(2025, 9, 22)
         stock_code = "6488"
@@ -73,16 +76,17 @@ class TestDataFetcher(unittest.TestCase):
 
         # Check that download was called twice, first with .TW, then with .TWO
         calls = [
-            call("6488.TW", start=test_date, end=test_date + timedelta(days=1), progress=False),
-            call("6488.TWO", start=test_date, end=test_date + timedelta(days=1), progress=False)
+            call("6488.TW", start=test_date, end=test_date + timedelta(days=1), progress=False, auto_adjust=False),
+            call("6488.TWO", start=test_date, end=test_date + timedelta(days=1), progress=False, auto_adjust=False)
         ]
         mock_yf_download.assert_has_calls(calls)
         self.assertEqual(mock_yf_download.call_count, 2)
         mock_db_service.save_transaction_data.assert_called_once()
 
+    @patch('src.services.data_fetcher._get_stock_name', return_value="TSMC")
     @patch('src.services.data_fetcher.yf.download')
     @patch('src.services.data_fetcher.db_service')
-    def test_04_fetch_data_for_date_range(self, mock_db_service, mock_yf_download):
+    def test_04_fetch_data_for_date_range(self, mock_db_service, mock_yf_download, mock_get_name):
         """Test fetching data for a date range from the web."""
         stock_code = "2330"
         start_date = date(2025, 9, 1)
@@ -91,9 +95,9 @@ class TestDataFetcher(unittest.TestCase):
         mock_db_service.get_transaction_data_by_range.side_effect = [
             [], 
             [ # Mock return for the final re-query
-                TransactionData(stock_code, date(2025, 9, 1), 900, 905, 910, 899, 10000),
-                TransactionData(stock_code, date(2025, 9, 2), 906, 910, 915, 905, 12000),
-                TransactionData(stock_code, date(2025, 9, 3), 911, 908, 916, 907, 11000)
+                TransactionData(stock_code, "TSMC", date(2025, 9, 1), 900, 905, 910, 899, 10000),
+                TransactionData(stock_code, "TSMC", date(2025, 9, 2), 906, 910, 915, 905, 12000),
+                TransactionData(stock_code, "TSMC", date(2025, 9, 3), 911, 908, 916, 907, 11000)
             ]
         ]
 
@@ -107,11 +111,12 @@ class TestDataFetcher(unittest.TestCase):
         result = data_fetcher.fetch_stock_data_in_range(stock_code, start_date, end_date)
 
         mock_yf_download.assert_called_once_with(
-            "2330.TW", start=start_date, end=end_date + timedelta(days=1), progress=False
+            "2330.TW", start=start_date, end=end_date + timedelta(days=1), progress=False, auto_adjust=False
         )
         mock_db_service.save_transaction_data.assert_called_once()
         self.assertEqual(len(result), 3)
         self.assertEqual(result[1].close_price, 910)
+        self.assertEqual(result[0].stock_name, "TSMC")
 
 if __name__ == '__main__':
     unittest.main()

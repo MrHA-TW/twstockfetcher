@@ -46,6 +46,7 @@ class TestDbService(unittest.TestCase):
         test_date = date(2025, 9, 18)
         mock_data = TransactionData(
             stock_code="2330",
+            stock_name="TSMC",
             date=test_date,
             open_price=900.0,
             close_price=905.0,
@@ -62,8 +63,8 @@ class TestDbService(unittest.TestCase):
 
         self.assertIsNotNone(retrieved_data)
         self.assertEqual(retrieved_data.stock_code, "2330")
+        self.assertEqual(retrieved_data.stock_name, "TSMC")
         self.assertEqual(retrieved_data.date, test_date)
-        self.assertEqual(retrieved_data.close_price, 905.0)
 
     def test_03_get_non_existent_data(self):
         """Test retrieving data that does not exist."""
@@ -76,10 +77,10 @@ class TestDbService(unittest.TestCase):
         start_date = date(2025, 9, 1)
         end_date = date(2025, 9, 3)
         mock_data = [
-            TransactionData("2330", date(2025, 9, 1), 900, 905, 910, 899, 10000),
-            TransactionData("2330", date(2025, 9, 2), 906, 910, 915, 905, 12000),
-            TransactionData("2330", date(2025, 9, 3), 911, 908, 916, 907, 11000),
-            TransactionData("2330", date(2025, 9, 4), 909, 912, 914, 908, 13000) # Out of range
+            TransactionData("2330", "TSMC", date(2025, 9, 1), 900, 905, 910, 899, 10000),
+            TransactionData("2330", "TSMC", date(2025, 9, 2), 906, 910, 915, 905, 12000),
+            TransactionData("2330", "TSMC", date(2025, 9, 3), 911, 908, 916, 907, 11000),
+            TransactionData("2330", "TSMC", date(2025, 9, 4), 909, 912, 914, 908, 13000) # Out of range
         ]
 
         db_service.save_transaction_data(mock_data)

@@ -78,9 +78,12 @@ def main():
         stock_codes = [code.strip() for code in args.stocks.split(',')]
         for code in stock_codes:
             summary = summary_service.generate_weekly_summary(code, today)
-            print(f"\nStock: {code} ({summary.start_date} to {summary.end_date})")
             if summary.data:
                 df = pd.DataFrame(summary.data)
+                # Reorder columns to place stock_name after stock_code
+                cols = ['stock_code', 'stock_name', 'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']
+                df_cols = [col for col in cols if col in df.columns]
+                df = df[df_cols]
                 print(df.to_string(index=False))
             else:
                 print("No data found for this period.")
@@ -93,6 +96,10 @@ def main():
             print(f"\nStock: {code} (Month: {summary.month})")
             if summary.data:
                 df = pd.DataFrame(summary.data)
+                # Reorder columns to place stock_name after stock_code
+                cols = ['stock_code', 'stock_name', 'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']
+                df_cols = [col for col in cols if col in df.columns]
+                df = df[df_cols]
                 print(df.to_string(index=False))
             else:
                 print("No data found for this period.")
@@ -110,6 +117,10 @@ def main():
         
         if all_data:
             df = pd.DataFrame(all_data)
+            # Reorder columns to place stock_name after stock_code
+            cols = ['stock_code', 'stock_name', 'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume']
+            df_cols = [col for col in cols if col in df.columns]
+            df = df[df_cols]
             print(df.to_string(index=False))
         else:
             print("No data found for the specified stocks on this date.")

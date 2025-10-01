@@ -12,6 +12,7 @@ class Stock:
 class TransactionData:
     """Represents the daily transaction data for a stock."""
     stock_code: str
+    stock_name: str
     date: date
     open_price: float
     close_price: float

@@ -17,16 +17,24 @@ This is a command-line tool to fetch stock data for both listed (TWSE) and over-
 
 ## Usage
 
+All commands will automatically fetch and cache the required stock data.
+
 ### Querying by Date Range
 
-To query stock data for a specific date range, use the `--stock`, `--start-date`, and `--end-date` arguments:
+To query stock data for a specific date range, use the `--stocks`, `--start-date`, and `--end-date` arguments. The stock name is now included in the output.
 
 ```bash
 # Query a listed stock (e.g., TSMC)
-python3 -m src.cli.main --stock 2330 --start-date 2025-09-01 --end-date 2025-09-05
+python3 -m src.cli.main --stocks 2330 --start-date 2024-01-02 --end-date 2024-01-03
+```
 
-# Query an OTC stock (e.g., GAMA)
-python3 -m src.cli.main --stock 8086 --start-date 2025-09-01 --end-date 2025-09-05
+**Example Output:**
+
+```
+--- Transaction Data for 2330 from 2024-01-02 to 2024-01-03 ---
+ stock_code                                         stock_name       date  open_price  high_price  low_price  close_price   volume
+       2330 Taiwan Semiconductor Manufacturing Company Limited 2024-01-02       590.0       593.0      589.0        593.0 26059058
+       2330 Taiwan Semiconductor Manufacturing Company Limited 2024-01-03       584.0       585.0      576.0        578.0 37106763
 ```
 
 If `--end-date` is omitted, it will default to the current date.
@@ -36,7 +44,15 @@ If `--end-date` is omitted, it will default to the current date.
 To get the daily data for one or more stocks, use the `--stocks` argument with a comma-separated list of stock codes:
 
 ```bash
-python3 -m src.cli.main --stocks 2330,8086
+python3 -m src.cli.main --stocks 2330,2317
+```
+
+**Example Output:**
+```
+--- Daily Transaction Data for 2025-10-01 ---
+ stock_code                                         stock_name       date  open_price  high_price  low_price  close_price    volume
+       2330 Taiwan Semiconductor Manufacturing Company Limited 2025-10-01       900.0       910.0      899.0        905.0  50000000
+       2317                           Hon Hai Precision Industry Co. 2025-10-01       180.0       182.0      179.0        181.0  80000000
 ```
 
 ### Weekly and Monthly Summaries
@@ -45,8 +61,16 @@ To get a summary for the past week or month, use the `--weekly` or `--monthly` f
 
 ```bash
 # Weekly summary
-python3 -m src.cli.main --stocks 2330,8086 --weekly
+python3 -m src.cli.main --stocks 2330 --weekly
+```
 
-# Monthly summary
-python3 -m src.cli.main --stocks 2330,8086 --monthly
+**Example Output:**
+```
+--- Weekly Summary for Week Ending 2025-10-01 ---
+
+Stock: 2330 (2025-09-29 to 2025-10-03)
+ stock_code                                         stock_name       date  open_price  high_price  low_price  close_price   volume
+       2330 Taiwan Semiconductor Manufacturing Company Limited 2025-09-29       900.0       910.0      899.0        905.0  50000000
+       2330 Taiwan Semiconductor Manufacturing Company Limited 2025-09-30       906.0       915.0      905.0        910.0  52000000
+       2330 Taiwan Semiconductor Manufacturing Company Limited 2025-10-01       911.0       918.0      908.0        912.0  48000000
 ```
