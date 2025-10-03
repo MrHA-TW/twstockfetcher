@@ -1,3 +1,5 @@
+import os
+import contextlib
 from datetime import date, timedelta
 from typing import List
 
@@ -94,4 +96,53 @@ def display_date_range_data(stock_code: str, start_date: date, end_date: date):
         print(df.to_string(index=False))
     else:
         print("No data found for the specified date range.")
+
+
+import yfinance as yf
+
+def display_stock_info(stock_code: str):
+    """Fetches and displays key investment metrics for a given stock code."""
+    print(f"--- Key Investment Metrics for {stock_code} ---")
+    
+    ticker = None
+    info = None
+    
+    # Try different suffixes for Taiwan stocks. The language of the info (e.g., Chinese for longName)
+    # depends on the data source (Yahoo Finance) and is handled automatically.
+    with open(os.devnull, 'w') as devnull:
+        with contextlib.redirect_stderr(devnull):
+            for suffix in [".TW", ".TWO", ""]:
+                try:
+                    temp_ticker = yf.Ticker(f"{stock_code}{suffix}")
+                    # The 'info' attribute can be slow; check a lightweight attribute first
+                    if temp_ticker.history(period="1d").empty:
+                        continue
+                    info = temp_ticker.info
+                    # Check if we got meaningful data
+                    if info and info.get('longName'):
+                        ticker = temp_ticker
+                        break
+                except Exception:
+                    continue
+
+    if not ticker or not info:
+        print(f"Could not retrieve information for stock code: {stock_code}")
+        return
+
+    key_metrics = {
+        "公司名稱": info.get("longName"),
+        "產業": info.get("industry"),
+        "市值": f"{info.get('marketCap', 'N/A'):,}",
+        "本益比": info.get("trailingPE"),
+        "預期本益比": info.get("forwardPE"),
+        "股價淨值比": info.get("priceToBook"),
+        "股息殖利率": f"{info.get('dividendYield', 0) * 100:.2f}%" if info.get('dividendYield') else "N/A",
+        "Beta值": info.get("beta"),
+        "目前股價": info.get("regularMarketPrice"),
+        "52週最高價": info.get("fiftyTwoWeekHigh"),
+        "52週最低價": info.get("fiftyTwoWeekLow"),
+    }
+
+    for key, value in key_metrics.items():
+        print(f"{key+':':<20} {value if value is not None else 'N/A'}")
 

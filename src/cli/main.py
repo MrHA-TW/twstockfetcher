@@ -1,3 +1,9 @@
+import sys
+import os
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
 import argparse
 import sys
 from datetime import date, datetime
@@ -44,11 +50,24 @@ def main():
         action='store_true',
         help='Get a summary for the past month.'
     )
+    parser.add_argument(
+        '--info',
+        action='store_true',
+        help='Get key investment metrics for a stock.'
+    )
 
     args = parser.parse_args()
     today = date.today()
 
-    if args.start_date:
+    if args.info:
+        if not args.stocks:
+            print("Error: --stocks is required with --info", file=sys.stderr)
+            sys.exit(1)
+        stock_codes = [code.strip() for code in args.stocks.split(',')]
+        for code in stock_codes:
+            summary_service.display_stock_info(code)
+
+    elif args.start_date:
         try:
             stock_codes_str = args.stocks
             if not stock_codes_str:

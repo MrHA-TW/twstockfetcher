@@ -2,16 +2,16 @@
 
 **Feature Branch**: `003-query-stock-data`
 
-**Phase 1: Design & Contracts (已完成，但需審查/完善的任務)**
+**Phase 1: Design & Contracts (已完成)**
 1.  [x] 審查 `spec.md` 和 `plan.md` 的完整性和清晰度。
 
-**Phase 2: Task Planning (目前正在進行)**
+**Phase 2: Task Planning (已完成)**
 2.  [x] 根據 `spec.md` 和 `plan.md` 產生 `tasks.md`。
 
-**Phase 3: Implementation**
+**Phase 3: Implementation (已完成)**
 
 **Models:**
-3.  **[P]** [x] 建立或更新 `src/models/stock_data.py`，定義股票交易資訊的資料模型，包括日期、開盤價、最高價、最低價、收盤價、成交量等欄位。
+3.  [x] 建立或更新 `src/models/stock_data.py`，定義股票交易資訊的資料模型，包括日期、開盤價、最高價、最低價、收盤價、成交量等欄位。
 
 **CLI 參數處理與驗證:**
 4.  [x] 為 `src/cli/main.py` 撰寫整合測試，驗證 `--stock`、`--start-date`、`--end-date` 參數的解析。
@@ -45,3 +45,7 @@
 24. [x] 將 CLI 參數處理、資料擷取、資料庫互動和摘要顯示整合到 `src/cli/main.py` 中，以執行完整的查詢和顯示流程。
 25. [x] 為整個 CLI 流程撰寫全面的端到端整合測試，涵蓋 `spec.md` 中的所有驗收情境。
 26. [x] 修復 `--start-date` 和 `--end-date` 查詢不支持多個股票代碼的問題。
+
+**Phase 4: Finalization (已完成)**
+27. [x] 確認所有程式碼都已提交。
+28. [x] 最終審查和確認所有任務皆已完成。

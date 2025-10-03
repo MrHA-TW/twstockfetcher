@@ -39,6 +39,31 @@ python3 -m src.cli.main --stocks 2330 --start-date 2024-01-02 --end-date 2024-01
 
 If `--end-date` is omitted, it will default to the current date.
 
+### Getting Stock Information
+
+To get key investment metrics for a stock, use the `--info` flag:
+
+```bash
+python3 -m src.cli.main --stocks 2330 --info
+```
+
+**Example Output:**
+
+```
+--- Key Investment Metrics for 2330 ---
+公司名稱:             Taiwan Semiconductor Manufacturing Company, Ltd.
+產業:                 Semiconductors
+市值:                 23,562,063,892,480
+本益比:               31.263355
+預期本益比:           23.64066
+股價淨值比:           7.0583854
+股息殖利率:           1.51%
+Beta值:               0.883
+目前股價:             912
+52週最高價:           950.0
+52週最低價:           514.0
+```
+
 ### Daily Data
 
 To get the daily data for one or more stocks, use the `--stocks` argument with a comma-separated list of stock codes:
