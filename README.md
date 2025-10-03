@@ -51,17 +51,17 @@ python3 -m src.cli.main --stocks 2330 --info
 
 ```
 --- Key Investment Metrics for 2330 ---
-公司名稱:             Taiwan Semiconductor Manufacturing Company, Ltd.
-產業:                 Semiconductors
-市值:                 23,562,063,892,480
-本益比:               31.263355
-預期本益比:           23.64066
-股價淨值比:           7.0583854
-股息殖利率:           1.51%
-Beta值:               0.883
-目前股價:             912
-52週最高價:           950.0
-52週最低價:           514.0
+公司名稱:                Taiwan Semiconductor Manufacturing Company Limited
+產業:                  Semiconductors
+市值:                  36,305,660,542,976
+本益比:                 25.139164
+預期本益比:               24.250822
+股價淨值比:               7.9251413
+股息殖利率:               147.00%
+Beta值:               1.216
+目前股價:                1400.0
+52週最高價:              1400.0
+52週最低價:              780.0
 ```
 
 ### Daily Data
